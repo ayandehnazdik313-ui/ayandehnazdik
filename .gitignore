@@ -1,3 +1,11 @@
+# Dependencies
+node_modules/
+
+# Environment files - never commit real Firebase configuration
+.env
+.env.*
+!.env.example
+
 # Gradle files
 .gradle/
 build/
@@ -7,16 +15,12 @@ local.properties
 
 # Log/OS Files
 *.log
-
-# Android Studio generated files and folders
 captures/
 .externalNativeBuild/
 .cxx/
-*.aab
-*.apk
-output-metadata.json
+*.hprof
 
-# IntelliJ
+# IntelliJ / Android Studio
 *.iml
 .idea/
 misc.xml
@@ -30,5 +34,7 @@ render.experimental.xml
 # Google Services (e.g. APIs or Firebase)
 google-services.json
 
-# Android Profiling
-*.hprof
+# Build artifacts
+*.aab
+*.apk
+output-metadata.json
