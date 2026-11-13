@@ -2,6 +2,12 @@
 
 پلتفرم هوشمند تجربه مشتری، سفارش، مدیریت رستوران/کافه و وفاداری.
 
+## AI Skill / Business Knowledge
+
+The public business context and operating instructions for AI assistants are maintained in [SKILL.md](./SKILL.md). AI assistants can retrieve the raw file from:
+
+`https://raw.githubusercontent.com/ayandehnazdik313-ui/ayandehnazdik/main/SKILL.md`
+
 ## Business
 
 - چاپ سابلیمیشن
