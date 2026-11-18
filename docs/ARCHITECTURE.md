@@ -1,53 +1,95 @@
-# آینده نزدیک — Architecture
+# Ayandeh Nazdik Smart Web App — Architecture
 
-## Goal
+**Status:** WooCommerce-first commerce architecture approved  
+**Date:** 2026-11-18  
+**Branch:** `feat/smart-webapp-foundation`
 
-Build one coherent Persian-first customer and restaurant operations platform. The GitHub reference projects are architectural/UI references only; they are not merged wholesale.
+## Architecture decision
 
-## Application surfaces
+WooCommerce is the single source of truth for commerce. WordPress/WooCommerce owns products, variations, prices, stock, coupons, taxes, shipping, cart calculations, canonical commerce orders, payment gateway state and verified payment callbacks.
 
-- Customer: Home, Menu, Product, Cart, Checkout, Orders, QR Table Ordering, Loyalty, Rewards, Games, Notifications, Profile
-- Staff: operational order management and customer-safe order context
-- Kitchen: NEW / PREPARING / READY workflow
-- Admin: Dashboard, Orders, Products, Categories, Customers, Inventory, Tables, Loyalty, Rewards, Games, Notifications, Analytics, Staff, Settings
+Firebase remains an application-support layer only: authentication (after explicit identity mapping), saved editable design documents, short-lived kiosk sessions, application preferences and non-commerce operational metadata. Firebase must not become a parallel catalog, price book, inventory ledger, cart or payment ledger.
 
-## Technology direction
+## System boundaries
 
-- React + TypeScript + Vite
-- Tailwind CSS + shadcn/ui
-- TanStack Router
-- TanStack Query
-- TanStack Table
-- React Hook Form + Zod
-- Recharts
-- Firebase Authentication
-- Cloud Firestore
-- Firebase Storage when needed
-- Cloud Functions for trusted/server-side operations
+### WordPress / WooCommerce
+Authoritative for catalog, variations, pricing, stock, coupons, tax/shipping configuration, cart/checkout, canonical customer orders and payment state.
 
-## Architecture rules
+### Secure application backend
+Mediates privileged WooCommerce calls; maps Firebase identities to WordPress customer IDs; validates product/variation IDs, quantities, personalization fields, design ownership and current price; creates/updates orders; enforces authorization, idempotency, rate limits and audit logs. WooCommerce consumer secrets and gateway secrets remain server-side.
 
-1. Firebase-first. Do not add MySQL, Redis, Express, Cloudinary, or another backend without a demonstrated requirement.
-2. One routing system and one UI component system.
-3. Feature-based organization; keep UI, domain logic, and data access separated.
-4. Client state is not a source of truth for authorization, prices, loyalty, coins, XP, or rewards.
-5. Critical monetary and reward operations require trusted validation.
-6. Orders are idempotent and historical item prices are snapshotted.
-7. Real-time listeners are limited to operationally valuable data such as active orders.
-8. Customer experience is mobile-first and RTL/Persian-first.
-9. Admin is information-dense, searchable, filterable, and desktop-first.
-10. Security Rules and trusted server logic enforce permissions; frontend guards are UX only.
+### Firebase
+May support authentication, saved design projects, short-lived kiosk state and app-specific metadata. Do not trust Firebase for prices, stock, payment success or canonical commerce order totals.
 
-## Reference mapping
+### Design files
+Keep original uploads, editable project files, customer previews and production exports separate. Private assets require ownership-checked access. Validate MIME, extension, dimensions and size server-side. Do not enable customer uploads until Storage rules and authorization tests pass. Never overwrite official owner-supplied brand assets.
 
-- DineFlow Client: Customer/order UX patterns
-- TableOrder: QR/table ordering and real-time patterns
-- Take-A-Dish: staff/kitchen/table operational patterns
-- Shadcn Dashboard: dashboard/component reference
-- Shadcn Admin Template: primary admin architecture reference
+### Café Net
+Keep digital-service intake and fulfillment separate from sublimation production. A paid service may be represented by a WooCommerce product/order where appropriate; service-specific fields, attachments and fulfillment states remain in a dedicated workflow linked to the canonical WooCommerce order.
 
-## Core flow
+## Identity mapping
 
-DISCOVER → ORDER → TRACK → WAIT → PLAY → EARN → REDEEM → RETURN
+Never assume Firebase UID equals WordPress customer ID. Implement an explicit verified mapping record with Firebase UID, WordPress customer ID, verification status and audit timestamps. Prevent account linking from exposing another person's orders. Guest order access must use verified order-access flows.
 
-The waiting/game/loyalty layer is a differentiating feature, but it must never destabilize the core ordering workflow.
+## Trusted checkout flow
+
+1. Client submits product/variation IDs, quantity, validated personalization and an opaque private design reference — never a trusted price.
+2. Backend fetches authoritative product, variation, stock and price data from WooCommerce.
+3. Backend validates availability, ownership of design assets and allowed personalization fields.
+4. Backend creates or updates the WooCommerce cart/order through supported server-side APIs and hooks.
+5. Payment is initiated through the configured WooCommerce gateway.
+6. Only verified gateway callbacks or trusted WooCommerce payment state can mark an order paid.
+7. Idempotency keys prevent duplicate order creation and callback processing.
+8. Application reads canonical commerce status from WooCommerce; production metadata remains a separate workflow.
+
+Never create a parallel Firebase order that can be mistaken for a paid WooCommerce order.
+
+## Security requirements
+
+- Store API credentials only in server-side environment/secret storage.
+- Use least-privilege credentials and rotate them.
+- Authenticate and authorize every private endpoint.
+- Validate ownership of every design and uploaded file.
+- Validate uploads server-side; reject executable/unsupported formats.
+- Apply CSRF protection for cookie-authenticated operations.
+- Rate-limit authentication, uploads, AI generation and checkout.
+- Use prepared database operations, sanitize inputs and escape output.
+- Keep private files out of public caches and search indexes.
+- Isolate kiosk sessions and clear them after timeout.
+- Never cache private customer data or payment state in public service-worker caches.
+
+## Delivery phases
+
+1. **Discovery:** inspect repository, Firebase rules/functions, WordPress and WooCommerce environment.
+2. **Brand/UI:** exact owner-uploaded logo, character references and product photographs; RTL design system and responsive shell.
+3. **WooCommerce:** secure server-side connection, product/variation retrieval, cart, checkout and order synchronization; staging tests first.
+4. **Design Studio:** product editors, private uploads, saved designs, previews and production-file validation.
+5. **Café Net:** independent service intake and fulfillment, linked to WooCommerce orders when applicable.
+6. **Staff/Kiosk:** permission-scoped staff tools, production workflow, isolated kiosk sessions and cleanup.
+7. **AI/Automation:** optional consent-based server-side AI and n8n/Telegram integration; manual workflow remains available.
+8. **Acceptance:** build, unit, integration, security-rule, upload privacy, payment, mobile, kiosk, accessibility and recovery tests.
+
+A phase is not complete until its acceptance tests pass.
+
+## Verified current limitations
+
+- Existing repository is an early React/TypeScript/Vite + Firebase application.
+- No WooCommerce integration was present in the inspected source.
+- WordPress/WooCommerce API access and credentials have not been verified.
+- Payment gateway configuration has not been verified.
+- Official logo, Mahmoud reference photographs and product images must be available as assets before final brand-specific compositions.
+- Firebase Storage rules require review and tests before customer uploads are enabled.
+- Existing Firestore order rules and trusted order function require hardening before production commerce.
+
+## Acceptance criteria
+
+- WooCommerce alone governs prices, stock, checkout totals and payment state.
+- No WooCommerce secret reaches browser code.
+- Duplicate checkout requests cannot create duplicate orders.
+- Client-submitted prices are ignored.
+- No order is marked paid without verified WooCommerce/payment state.
+- Design references and uploads are private and ownership-checked.
+- Firebase is not a parallel commerce database.
+- Café Net and sublimation production workflows remain distinct.
+- Official uploaded brand assets are used without alteration.
+- Incomplete and externally dependent features are reported honestly.
